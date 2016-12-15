@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 """
 mkpw is a small tool to generate safe passwords.
@@ -43,6 +44,9 @@ try:
 except ImportError:
     from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
+
+__version__ = '0.1.0'
+__url__ = 'https://github.com/commx/mkpw'
 
 # ambigious characters
 ambigious_chars = '01OIl|B8G6S5Z2'
@@ -119,6 +123,7 @@ def main():
                         help='exclude special characters')
     parser.add_argument('--choices', dest='choices', action='store', default=config_defaults['choices'],
                         help='use the given characters instead of the character classes')
+    parser.add_argument('--version', action='version', version='mkpw %s (%s)' % (__version__, __url__))
 
     args = parser.parse_args()
 
