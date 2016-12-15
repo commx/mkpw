@@ -45,7 +45,7 @@ except ImportError:
     from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __url__ = 'https://github.com/commx/mkpw'
 
 # ambigious characters
@@ -65,7 +65,7 @@ config_defaults = {
     'count': 3,
     'length': 16,
     'exclude': None,
-    'ambigious': False,
+    'ambigious': True,
     'lowercase': True,
     'uppercase': True,
     'digits': True,
