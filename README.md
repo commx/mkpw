@@ -19,42 +19,29 @@ $ echo 'alias mkpw=/path/to/mkpw.py' >> ~/.bashrc
 ```
 
 ## Features
-By default, the script will generate three passwords with a length of 16 and print them to screen. The passwords contain lowercase and uppercase letters, digits and special characters by default and exclude ambigious characters (those who may confuse you like 0 and O). You can alter this behaviour by using the command line arguments.
-
-For greater flexibility, you can use configuration files to personalise your preferred way of creating passwords. This will ease the need of specifying the command line arguments all the time, and you can still provide them if you wish. Command line arguments always have a higher precedence than configuration file options.
-
-### Configuration files
-The configuration files are simply INI-styled text files which define a section and some options that control the behaviour of mkpw. Not all options must be present, but can.
-
-mkpw will find and read configurations in the following order:
-
-1. `/etc/mkpw.cfg`
-2. `/usr/local/etc/mkpw.cfg`
-3. `$HOME/.mkpw.cfg`
-
-If you want to specify a custom configuration file name, use the `MKPW_CONFIG_FILE` environment variable to achieve that. It also allows you to specify a custom section by exporting the filename and section, both separated by colon (e.g. `myfile.cfg:custom_section`).
-
-#### Example configuration file
-
-```ini
-; This is a example configuration file for mkpw.
-
-[default]
-count = 3
-length = 10
-ambigious = no
-
-[custom_section]
-count = 10
-length = 3
-special = no
-ambigious = yes
-```
-
-Execute mkpw with example.cfg and the custom section:
+By default, the script will generate a password with four segments with five characters each.  It includes upper- and lowercase letters, digits and a set of special characters.  Ambigious characters are excluded by default, but can be included by using the --with-ambigious option.
 
 ```
-$ MKPW_CONFIG_FILE=example.cfg:custom_section mkpw
+usage: mkpw [-h] [-s, --segments SEGMENTS]
+            [-l, --segment-length SEGMENT_LENGTH] [--with-ambigious] [-x]
+            [--sep SEP] [--version]
+            [count]
+
+Make safe passwords.
+
+positional arguments:
+  count
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s, --segments SEGMENTS
+                        number of segments
+  -l, --segment-length SEGMENT_LENGTH
+                        number of characters in segment
+  --with-ambigious      include ambigious characters
+  -x                    exclude special characters
+  --sep SEP             segment separator string
+  --version             show program's version number and exit
 ```
 
 ## Contributions

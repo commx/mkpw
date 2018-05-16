@@ -28,24 +28,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import os
-import sys
+import string
 
 from argparse import ArgumentParser
-from string import ascii_lowercase, ascii_uppercase, digits
 
 try:
     from secrets import choice as rand_choice
 except ImportError:
     from random import choice as rand_choice
 
-try:
-    from configparser import ConfigParser, NoOptionError, NoSectionError
-except ImportError:
-    from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
-
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 __url__ = 'https://github.com/commx/mkpw'
 
 # ambigious characters
@@ -54,130 +47,49 @@ ambigious_chars = '01OIl|B8G6S5Z2'
 # special characters to be used for generating passwords
 special_chars = '!"#$%&\'()*+,-./:;<=>?@[\]^_`{|}~'
 
-# configuration file paths, in that order
-config_file_paths = [
-    '/etc/mkpw.cfg',
-    '/usr/local/etc/mkpw.cfg',
-    os.path.expanduser('~/.mkpw.cfg')
-]
-
-config_defaults = {
-    'count': 3,
-    'length': 16,
-    'exclude': None,
-    'ambigious': True,
-    'lowercase': True,
-    'uppercase': True,
-    'digits': True,
-    'special': True,
-    'choices': None
-}
-
 
 def main():
-    config = ConfigParser()
-    section = 'default'
-
-    if 'MKPW_CONFIG_FILE' in os.environ:
-        name = os.environ['MKPW_CONFIG_FILE']
-        if ':' in name:
-            name, section = name.split(':')[:2]
-
-        config_file_paths.append(name)
-
-    # read files
-    config.read(config_file_paths)
-
-    # override the command line arguments
-    for key in ('count', 'length', 'exclude', 'ambigious', 'lowercase', 'uppercase', 'digits', 'special', 'choices'):
-        if key in ('count', 'length'):
-            meth = config.getint
-        elif key in ('ambigious', 'lowercase', 'uppercase', 'digits', 'special'):
-            meth = config.getboolean
-        else:
-            meth = config.get
-
-        try:
-            config_defaults[key] = meth(section, key)
-        except ValueError:
-            return sys.exit('Error: Value of %r in section %r of configuration file is invalid.' % (key, section))
-        except (NoOptionError, NoSectionError):
-            pass
-
     parser = ArgumentParser(description='Make safe passwords.')
-    parser.add_argument('count', type=int, default=config_defaults['count'], nargs='?',
-                        help='number of passwords to make')
-    parser.add_argument('-l, --length', type=int, default=config_defaults['length'], dest='length',
-                        help='length of desired passwords')
-    parser.add_argument('--exclude', dest='exclude', action='store', default=config_defaults['exclude'],
-                        help='exclude given characters from choices')
-    parser.add_argument('--exclude-ambigious', dest='ambigious', action='store_false',
-                        default=config_defaults['ambigious'], help='exclude lowercase letters')
-    parser.add_argument('--exclude-lowercase', dest='lowercase', action='store_false',
-                        default=config_defaults['lowercase'], help='exclude lowercase letters')
-    parser.add_argument('--exclude-uppercase', dest='uppercase', action='store_false',
-                        default=config_defaults['uppercase'], help='exclude uppercase letters')
-    parser.add_argument('--exclude-digits', dest='digits', action='store_false', default=config_defaults['digits'],
-                        help='exclude digits')
-    parser.add_argument('--exclude-special', dest='special', action='store_false', default=config_defaults['special'],
-                        help='exclude special characters')
-    parser.add_argument('--choices', dest='choices', action='store', default=config_defaults['choices'],
-                        help='use the given characters instead of the character classes')
+    parser.add_argument('count', default=1, type=int, nargs='?')
+    parser.add_argument('-s, --segments', dest='segments', type=int, default=4, help='number of segments')
+    parser.add_argument('-l, --segment-length', dest='segment_length', type=int, default=5, help='number of characters '
+                                                                                                 'in segment')
+    parser.add_argument('--with-ambigious', dest='with_ambigious', default=False, action='store_true',
+                        help='include ambigious characters')
+    parser.add_argument('-x', dest='exclude_special', default=False, action='store_true', help='exclude special '
+                                                                                               'characters')
+    parser.add_argument('--sep', default='-', help='segment separator string')
     parser.add_argument('--version', action='version', version='mkpw %s (%s)' % (__version__, __url__))
 
     args = parser.parse_args()
 
-    for _ in range(args.count):
-        while True:
-            s = make_password(args)
+    # prepare available characters to choose from
+    available_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
 
-            # ensure that the password includes characters of any class
-            if not args.choices:
-                if args.lowercase and not any(x.islower() for x in s):
-                    continue
-                if args.uppercase and not any(x.isupper() for x in s):
-                    continue
-                if args.digits and not any(x.isdigit() for x in s):
-                    continue
-                if args.special and not any(x in special_chars for x in s):
-                    continue
+    if not args.exclude_special:
+        available_chars += special_chars
 
-            break
-
-        print(s)
+    for c in range(args.count):
+        segments = [make_word(available_chars, args.segment_length, not args.with_ambigious)
+                    for _ in range(args.segments)]
+        print(args.sep.join(segments))
 
 
-def make_password(args):
+def make_word(chars, length, exclude_ambigious=False):
     """
     Create a password.
 
-    :param args: ArgumentParser args
+    :param chars: Available characters
+    :param length: Length of desired word
+    :param exclude_ambigious: exclude ambigious characters
     :return: password string
     """
-    if not args.choices and not args.lowercase and not args.uppercase and not args.digits and not args.special:
-        return sys.exit('Error: All possible character classes have been excluded and no choices have been specified.')
-    elif args.choices:
-        choices = ''.join(set(args.choices))
-    else:
-        choices = ''
+    choices = chars
 
-        if args.lowercase:
-            choices += ascii_lowercase
-        if args.uppercase:
-            choices += ascii_uppercase
-        if args.digits:
-            choices += digits
-        if args.special:
-            choices += special_chars
+    if exclude_ambigious:
+        choices = ''.join(x for x in chars if x not in ambigious_chars)
 
-    if not args.ambigious:
-        choices = ''.join(x for x in choices if x not in ambigious_chars)
-    if args.exclude:
-        choices = ''.join(x for x in choices if x not in args.exclude)
-    if not choices:
-        return sys.exit('Error: All possible choices were excluded.')
-
-    return ''.join(rand_choice(choices) for _ in range(args.length))
+    return ''.join(rand_choice(choices) for _ in range(length))
 
 
 if __name__ == '__main__':
